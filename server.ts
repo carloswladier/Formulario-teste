@@ -99,7 +99,29 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
-
+ // teste banco
+  app.get("/api/contacts", async (req, res) => {
+  try {
+    res.json([
+      {
+        id: 1,
+        nome: "Teste funcionando"
+      }
+    ]);
+  } catch (error) {
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+  app.post("/api/contact", async (req, res) => {
+  try {
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+  //final teste banco
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
