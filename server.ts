@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import mysql from "mysql2/promise";
@@ -9,12 +8,7 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  app.use(
-  cors({
-    origin: "https://peachpuff-cheetah-825750.hostingersite.com",
-  })
-);
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -37,90 +31,52 @@ async function startServer() {
     // Continue starting server even if DB fails, to show the UI
   }
 
-   // API Routes
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "ok",
-    env: process.env.NODE_ENV
+  // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV });
   });
-});
 
-app.get("/api/db-test", async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({
-      error: "DB Pool not initialized"
-    });
-  }
+  app.get("/api/db-test", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
+    try {
+      const [rows] = await pool.query("SELECT 1 + 1 AS solution");
+      res.json({ status: "connected", result: rows });
+    } catch (error) {
+      console.error("Database connection error:", error);
+      res.status(500).json({ status: "error", message: "Failed to connect to database. Check your Credentials." });
+    }
+  });
 
-  try {
-    const [rows] = await pool.query("SELECT 1 + 1 AS solution");
+  app.get("/api/contacts", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
+    try {
+      const [rows] = await pool.query("SELECT * FROM contacts ORDER BY id DESC");
+      res.json(rows);
+    } catch (error) {
+      console.error("Fetch error:", error);
+      res.status(500).json({ success: false, message: "Erro ao buscar dados." });
+    }
+  });
 
-    res.json({
-      status: "connected",
-      result: rows
-    });
-  } catch (error) {
-    console.error("Database connection error:", error);
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
+    const { name, email, phone, address, message } = req.body;
+    
+    try {
+      console.log("Attempting to save contact form data to DB...");
+      const [result] = await pool.execute(
+        "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
+        [name, email, phone, address, message]
+      );
+      
+      res.json({ success: true, message: "Mensagem recebida com sucesso!", id: (result as any).insertId });
+    } catch (error) {
+      console.error("Save error:", error);
+      res.status(500).json({ success: false, message: "Erro ao salvar dados." });
+    }
+  });
 
-    res.status(500).json({
-      status: "error",
-      message: "Failed to connect to database"
-    });
-  }
-});
-
-app.get("/api/contacts", async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({
-      error: "DB Pool not initialized"
-    });
-  }
-
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM contacts ORDER BY id DESC"
-    );
-
-    res.json(rows);
-  } catch (error) {
-    console.error("Fetch error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Erro ao buscar dados."
-    });
-  }
-});
-
-app.post("/api/contact", async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({
-      error: "DB Pool not initialized"
-    });
-  }
-
-  const { name, email, phone, address, message } = req.body;
-
-  try {
-    const [result] = await pool.execute(
-      "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
-      [name, email, phone, address, message]
-    );
-
-    res.json({
-      success: true,
-      message: "Mensagem recebida com sucesso!",
-      id: (result as any).insertId
-    });
-  } catch (error) {
-    console.error("Save error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Erro ao salvar dados."
-    });
-  }
-});
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -135,29 +91,7 @@ app.post("/api/contact", async (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
- 
-  app.get("/api/contacts", async (req, res) => {
-  try {
-    res.json([
-      {
-        id: 1,
-        nome: "Teste funcionando"
-      }
-    ]);
-  } catch (error) {
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-  app.post("/api/contact", async (req, res) => {
-  try {
-    res.json({
-      success: true
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-  
+
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
