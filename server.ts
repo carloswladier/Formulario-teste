@@ -38,11 +38,13 @@ async function startServer() {
   }
 
   // API Routes
-  app.get("/api/health", (req, res) => {
+  // Código original app.get("/api/health", (req, res) => {
+    app.get("/api/contacts", async (req, res) => {
     res.json({ status: "ok", env: process.env.NODE_ENV });
   });
 
-  app.get("/api/db-test", async (req, res) => {
+  // Código original app.get("/api/db-test", async (req, res) => {
+    app.post("/api/contact", async (req, res) => {
     if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
     try {
       const [rows] = await pool.query("SELECT 1 + 1 AS solution");
