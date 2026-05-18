@@ -14,7 +14,7 @@ async function startServer() {
     origin: "https://peachpuff-cheetah-825750.hostingersite.com",
   })
 );
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
 
