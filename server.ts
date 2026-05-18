@@ -1,0 +1,76 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.use(express.json());
+
+  // Database Connection Pool
+  const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT || "3306"),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  });
+
+  // API Routes
+  app.get("/api/db-test", async (req, res) => {
+    try {
+      const [rows] = await pool.query("SELECT 1 + 1 AS solution");
+      res.json({ status: "connected", result: rows });
+    } catch (error) {
+      console.error("Database connection error:", error);
+      res.status(500).json({ status: "error", message: "Failed to connect to database" });
+    }
+  });
+
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    const { name, email, phone, address, message } = req.body;
+    
+    try {
+      // Salva os dados no banco de dados
+      const [result] = await pool.execute(
+        "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
+        [name, email, phone, address, message]
+      );
+      
+      res.json({ success: true, message: "Mensagem recebida com sucesso!", id: (result as any).insertId });
+    } catch (error) {
+      console.error("Save error:", error);
+      res.status(500).json({ success: false, message: "Erro ao salvar dados." });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
