@@ -38,7 +38,7 @@ export default function App() {
   const fetchContacts = async () => {
     setLoadingContacts(true);
     try {
-      const response = await fetch("/api/contacts");
+      const response = await fetch("/https://formulario-teste-4ppf.onrender.com/api/contacts");
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
@@ -61,7 +61,7 @@ export default function App() {
     setStatus("loading");
     
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch("/https://formulario-teste-4ppf.onrender.com/api/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
