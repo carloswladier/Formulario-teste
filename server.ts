@@ -12,35 +12,59 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Database Connection Pool
-  const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    port: parseInt(process.env.DB_PORT || "3306"),
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-  });
+  // Database Connection Pool with error handling
+  let pool: mysql.Pool;
+  try {
+    pool = mysql.createPool({
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASS || "",
+      database: process.env.DB_NAME || "test",
+      port: parseInt(process.env.DB_PORT || "3306"),
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+    console.log("Database pool initialized (checking connection lazily)");
+  } catch (err) {
+    console.error("Failed to initialize database pool:", err);
+    // Continue starting server even if DB fails, to show the UI
+  }
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV });
+  });
+
   app.get("/api/db-test", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
     try {
       const [rows] = await pool.query("SELECT 1 + 1 AS solution");
       res.json({ status: "connected", result: rows });
     } catch (error) {
       console.error("Database connection error:", error);
-      res.status(500).json({ status: "error", message: "Failed to connect to database" });
+      res.status(500).json({ status: "error", message: "Failed to connect to database. Check your Credentials." });
+    }
+  });
+
+  app.get("/api/contacts", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
+    try {
+      const [rows] = await pool.query("SELECT * FROM contacts ORDER BY id DESC");
+      res.json(rows);
+    } catch (error) {
+      console.error("Fetch error:", error);
+      res.status(500).json({ success: false, message: "Erro ao buscar dados." });
     }
   });
 
   // Contact form submission endpoint
   app.post("/api/contact", async (req, res) => {
+    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
     const { name, email, phone, address, message } = req.body;
     
     try {
-      // Salva os dados no banco de dados
+      console.log("Attempting to save contact form data to DB...");
       const [result] = await pool.execute(
         "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
         [name, email, phone, address, message]
