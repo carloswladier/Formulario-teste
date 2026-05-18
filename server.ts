@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import mysql from "mysql2/promise";
@@ -8,6 +9,11 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
+  app.use(
+  cors({
+    origin: "https://peachpuff-cheetah-825750.hostingersite.com",
+  })
+);
   const PORT = 3000;
 
   app.use(express.json());
