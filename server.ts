@@ -82,11 +82,15 @@ app.options("*", cors());
       );
       
       res.json({ success: true, message: "Mensagem recebida com sucesso!", id: (result as any).insertId });
-    } catch (error) {
-      console.error("Save error:", error);
-      res.status(500).json({ success: false, message: "Erro ao salvar dados." });
-    }
+    } catch (error: any) {
+  console.error("Save error:", error);
+
+  res.status(500).json({
+    success: false,
+    message: "Erro ao salvar dados.",
+    error: error.message
   });
+}
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
