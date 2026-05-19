@@ -38,7 +38,7 @@ export default function App() {
   const fetchContacts = async () => {
     setLoadingContacts(true);
     try {
-      const response = await fetch("/api/contacts");
+      const response = await fetch("/api/contact");
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
