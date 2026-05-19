@@ -58,38 +58,82 @@ app.options("*", cors());
     }
   });
 
-  app.get("/api/contacts", async (req, res) => {
-    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
-    try {
-      const [rows] = await pool.query("SELECT * FROM contacts ORDER BY id DESC");
-      res.json(rows);
-    } catch (error) {
-  console.error("Save error:", error);
-  res.status(500).json({ success: false, message: "Erro ao salvar dados." });
-}
+ app.get("/api/contacts", async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: "DB Pool not initialized" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM contacts ORDER BY id DESC"
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Save error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Erro ao buscar dados.",
+    });
+  }
+});
 
   // Contact form submission endpoint
-  app.post("/api/contact", async (req, res) => {
-    if (!pool) return res.status(500).json({ error: "DB Pool not initialized" });
-    const { name, email, phone, address, message } = req.body;
-    
-    try {
-      console.log("Attempting to save contact form data to DB...");
-      const [result] = await pool.execute(
-        "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
-        [name, email, phone, address, message]
-      );
-      
-      res.json({ success: true, message: "Mensagem recebida com sucesso!", id: (result as any).insertId });
-    } catch (error: any) {
-  console.error("Save error:", error);
+  app.get("/api/contacts", async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: "DB Pool not initialized" });
+  }
 
-  res.status(500).json({
-    success: false,
-    message: "Erro ao salvar dados.",
-    error: error.message
-  });
-}
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM contacts ORDER BY id DESC"
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Save error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Erro ao buscar dados.",
+    });
+  }
+}); // <-- ESTAVA FALTANDO ISSO
+
+
+
+// Contact form submission endpoint
+app.post("/api/contact", async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: "DB Pool not initialized" });
+  }
+
+  const { name, email, phone, address, message } = req.body;
+
+  try {
+    console.log("Attempting to save contact form data to DB...");
+
+    const [result] = await pool.execute(
+      "INSERT INTO contacts (name, email, phone, address, message) VALUES (?, ?, ?, ?, ?)",
+      [name, email, phone, address, message]
+    );
+
+    res.json({
+      success: true,
+      message: "Mensagem recebida com sucesso!",
+      id: (result as any).insertId,
+    });
+  } catch (error: any) {
+    console.error("Save error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Erro ao salvar dados.",
+      error: error.message,
+    });
+  }
+}); // <-- ESTAVA FALTANDO ISSO
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
