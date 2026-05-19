@@ -63,14 +63,9 @@ app.options("*", cors());
     try {
       const [rows] = await pool.query("SELECT * FROM contacts ORDER BY id DESC");
       res.json(rows);
-    } catch (error: any) {
+    } catch (error) {
   console.error("Save error:", error);
-
-  res.status(500).json({
-    success: false,
-    message: "Erro ao salvar dados.",
-    error: error.message
-  });
+  res.status(500).json({ success: false, message: "Erro ao salvar dados." });
 }
 
   // Contact form submission endpoint
